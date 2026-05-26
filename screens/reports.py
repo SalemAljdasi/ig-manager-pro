@@ -1,381 +1,249 @@
-"""
-IG Manager Pro - Reports Screen
-View, filter, export and manage saved scan results
-"""
-
-import os
-import json
-from datetime import datetime
-from kivy.lang import Builder
+import threading
+from kivy.uix.scrollview import ScrollView
 from kivy.clock import Clock
 from kivy.metrics import dp
-from kivy.utils import get_color_from_hex
 from kivymd.uix.screen import MDScreen
 from kivymd.uix.boxlayout import MDBoxLayout
 from kivymd.uix.label import MDLabel
 from kivymd.uix.card import MDCard
-from kivymd.uix.button import MDRaisedButton, MDFlatButton
+from kivymd.uix.button import MDRaisedButton, MDFlatButton, MDIconButton
+from kivymd.uix.textfield import MDTextField
 from kivymd.uix.dialog import MDDialog
-from models.database import Database
-from assets.theme import *
-
-Builder.load_string("""
-<ReportsScreen>:
-    name: "reports"
-    MDBoxLayout:
-        orientation: "vertical"
-        md_bg_color: app.hex_to_rgba("#0a0a0f")
-
-        # Header
-        MDBoxLayout:
-            size_hint_y: None
-            height: "64dp"
-            padding: ["20dp", "8dp"]
-            spacing: "8dp"
-            md_bg_color: app.hex_to_rgba("#12121a")
-            MDLabel:
-                text: "Reports"
-                font_style: "H6"
-                theme_text_color: "Custom"
-                text_color: app.hex_to_rgba("#22c55e")
-                bold: True
-                size_hint_x: 1
-
-        # Filter bar
-        MDBoxLayout:
-            size_hint_y: None
-            height: "52dp"
-            padding: ["12dp", "6dp"]
-            spacing: "8dp"
-            md_bg_color: app.hex_to_rgba("#12121a")
-
-            MDRaisedButton:
-                text: "All"
-                md_bg_color: app.hex_to_rgba("#1a1a2e")
-                font_size: "12sp"
-                size_hint_x: None
-                width: "56dp"
-                on_release: root.filter_scans("all")
-
-            MDRaisedButton:
-                text: "✅ Active"
-                md_bg_color: app.hex_to_rgba("#1a1a2e")
-                font_size: "12sp"
-                size_hint_x: None
-                width: "84dp"
-                on_release: root.filter_scans("active")
-
-            MDRaisedButton:
-                text: "🚫 Off"
-                md_bg_color: app.hex_to_rgba("#1a1a2e")
-                font_size: "12sp"
-                size_hint_x: None
-                width: "72dp"
-                on_release: root.filter_scans("disabled")
-
-            MDRaisedButton:
-                text: "⚠️ SB"
-                md_bg_color: app.hex_to_rgba("#1a1a2e")
-                font_size: "12sp"
-                size_hint_x: None
-                width: "64dp"
-                on_release: root.filter_scans("shadowban")
-
-            MDRaisedButton:
-                text: "🔒 Prv"
-                md_bg_color: app.hex_to_rgba("#1a1a2e")
-                font_size: "12sp"
-                size_hint_x: None
-                width: "68dp"
-                on_release: root.filter_scans("private")
-
-        # Export buttons
-        MDBoxLayout:
-            size_hint_y: None
-            height: "48dp"
-            padding: ["12dp", "4dp"]
-            spacing: "8dp"
-            md_bg_color: app.hex_to_rgba("#0a0a0f")
-
-            MDRaisedButton:
-                text: "📄 Export HTML"
-                md_bg_color: app.hex_to_rgba("#06b6d4")
-                font_size: "12sp"
-                on_release: root.export_html()
-
-            MDRaisedButton:
-                text: "📦 Export JSON"
-                md_bg_color: app.hex_to_rgba("#a855f7")
-                font_size: "12sp"
-                on_release: root.export_json()
-
-            MDRaisedButton:
-                text: "🗑 Clear All"
-                md_bg_color: app.hex_to_rgba("#ef4444")
-                font_size: "12sp"
-                on_release: root.confirm_clear()
-
-        # Results count label
-        MDLabel:
-            id: count_label
-            text: "Loading..."
-            theme_text_color: "Custom"
-            text_color: app.hex_to_rgba("#475569")
-            font_style: "Caption"
-            padding: ["16dp", "4dp"]
-            size_hint_y: None
-            height: "24dp"
-
-        # Table header
-        MDBoxLayout:
-            size_hint_y: None
-            height: "36dp"
-            padding: ["12dp", "4dp"]
-            md_bg_color: app.hex_to_rgba("#12121a")
-            spacing: "4dp"
-
-            MDLabel:
-                text: "Status"
-                theme_text_color: "Custom"
-                text_color: app.hex_to_rgba("#94a3b8")
-                font_style: "Caption"
-                bold: True
-                size_hint_x: 0.18
-
-            MDLabel:
-                text: "Username"
-                theme_text_color: "Custom"
-                text_color: app.hex_to_rgba("#94a3b8")
-                font_style: "Caption"
-                bold: True
-                size_hint_x: 0.3
-
-            MDLabel:
-                text: "Followers"
-                theme_text_color: "Custom"
-                text_color: app.hex_to_rgba("#94a3b8")
-                font_style: "Caption"
-                bold: True
-                size_hint_x: 0.22
-                halign: "right"
-
-            MDLabel:
-                text: "Date"
-                theme_text_color: "Custom"
-                text_color: app.hex_to_rgba("#94a3b8")
-                font_style: "Caption"
-                bold: True
-                size_hint_x: 0.3
-                halign: "right"
-
-        # Scrollable results list
-        ScrollView:
-            do_scroll_x: False
-            MDBoxLayout:
-                id: results_box
-                orientation: "vertical"
-                spacing: "2dp"
-                size_hint_y: None
-                height: self.minimum_height
-""")
-
-STATUS_META = {
-    "active":    ("✅", "#22c55e"),
-    "disabled":  ("🚫", "#ef4444"),
-    "shadowban": ("⚠️", "#f97316"),
-    "private":   ("🔒", "#a855f7"),
-    "unknown":   ("❓", "#94a3b8"),
-}
-
-
-class ScanRow(MDBoxLayout):
-    def __init__(self, scan: dict, **kwargs):
-        super().__init__(
-            orientation="horizontal",
-            size_hint_y=None,
-            height=dp(36),
-            padding=[dp(12), 0],
-            spacing=dp(4),
-            **kwargs,
-        )
-        status = scan.get("status", "unknown")
-        icon, color = STATUS_META.get(status, ("❓", "#94a3b8"))
-        date_str = scan.get("scanned_at", "")[:10]
-
-        self.add_widget(MDLabel(
-            text=icon,
-            size_hint_x=0.18,
-            font_style="Body2",
-        ))
-        self.add_widget(MDLabel(
-            text=f"@{scan.get('username', '')}",
-            theme_text_color="Custom",
-            text_color=get_color_from_hex(color),
-            font_style="Body2",
-            bold=True,
-            size_hint_x=0.3,
-        ))
-        self.add_widget(MDLabel(
-            text=f"{scan.get('followers', 0):,}",
-            theme_text_color="Custom",
-            text_color=get_color_from_hex("#94a3b8"),
-            font_style="Caption",
-            halign="right",
-            size_hint_x=0.22,
-        ))
-        self.add_widget(MDLabel(
-            text=date_str,
-            theme_text_color="Custom",
-            text_color=get_color_from_hex("#475569"),
-            font_style="Caption",
-            halign="right",
-            size_hint_x=0.3,
-        ))
-
-
-def _export_dir():
-    try:
-        from android.storage import primary_external_storage_path  # type: ignore
-        base = os.path.join(primary_external_storage_path(), "Download")
-    except ImportError:
-        base = os.path.expanduser("~")
-    os.makedirs(base, exist_ok=True)
-    return base
-
-
-def _html_report(scans: list) -> str:
-    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    rows = ""
-    for s in scans:
-        status  = s.get("status", "unknown")
-        _, color = STATUS_META.get(status, ("❓", "#94a3b8"))
-        rows += f"""
-        <tr>
-          <td style="color:{color};">{status.upper()}</td>
-          <td>@{s.get('username','')}</td>
-          <td>{s.get('followers',0):,}</td>
-          <td>{s.get('following',0):,}</td>
-          <td>{s.get('posts',0):,}</td>
-          <td>{'Yes' if s.get('is_private') else 'No'}</td>
-          <td>{'Yes' if s.get('is_verified') else 'No'}</td>
-          <td>{s.get('scanned_at','')[:16]}</td>
-        </tr>"""
-
-    return f"""<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>IG Manager Pro – Report</title>
-<style>
-  body{{background:#0a0a0f;color:#f1f5f9;font-family:Arial,sans-serif;padding:24px}}
-  h1{{color:#a855f7}} h2{{color:#06b6d4}}
-  table{{width:100%;border-collapse:collapse;margin-top:16px}}
-  th{{background:#12121a;color:#94a3b8;padding:10px;text-align:left;border-bottom:2px solid #a855f7}}
-  td{{padding:8px 10px;border-bottom:1px solid #1a1a2e}}
-  tr:hover{{background:#12121a}}
-  .badge{{padding:3px 10px;border-radius:12px;font-size:12px;font-weight:bold}}
-</style>
-</head>
-<body>
-<h1>IG Manager Pro</h1>
-<h2>Scan Report – {now}</h2>
-<p>Total accounts: <strong>{len(scans)}</strong></p>
-<table>
-  <thead>
-    <tr>
-      <th>Status</th><th>Username</th><th>Followers</th>
-      <th>Following</th><th>Posts</th><th>Private</th>
-      <th>Verified</th><th>Scanned At</th>
-    </tr>
-  </thead>
-  <tbody>
-    {rows}
-  </tbody>
-</table>
-<p style="margin-top:32px;color:#475569;font-size:12px">
-  Generated by IG Manager Pro • {now}
-</p>
-</body>
-</html>"""
+from kivymd.uix.menu import MDDropdownMenu
+from models.database import get_all_scans, clear_all, export_to_json, export_to_csv, export_to_html
+from assets.theme import STATUS_LABELS_AR, STATUS_COLORS
 
 
 class ReportsScreen(MDScreen):
-    _current_filter = "all"
-    _dialog = None
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.name = "reports"
+        self.dialog = None
+        self.current_filter = "all"
+        self.current_search = ""
+        self._build()
+
+    def _build(self):
+        root = MDBoxLayout(orientation="vertical")
+
+        header = MDBoxLayout(
+            orientation="horizontal",
+            size_hint_y=None,
+            height=dp(60),
+            padding=[dp(16), dp(8)],
+            md_bg_color=(0.07, 0.07, 0.18, 1),
+        )
+        header.add_widget(MDLabel(
+            text="📋 التقارير",
+            font_style="H6",
+            theme_text_color="Custom",
+            text_color=(0.655, 0.231, 0.929, 1),
+            bold=True,
+        ))
+        refresh_btn = MDIconButton(icon="refresh", on_release=lambda x: self.load_data())
+        header.add_widget(refresh_btn)
+        root.add_widget(header)
+
+        # Search & Filter
+        controls = MDBoxLayout(
+            orientation="vertical",
+            size_hint_y=None,
+            height=dp(110),
+            padding=dp(12),
+            spacing=dp(8),
+            md_bg_color=(0.07, 0.07, 0.16, 1),
+        )
+        self.search_field = MDTextField(
+            hint_text="🔎 بحث باسم المستخدم",
+            mode="rectangle",
+            size_hint_y=None,
+            height=dp(46),
+        )
+        self.search_field.bind(text=self.on_search)
+        controls.add_widget(self.search_field)
+
+        filter_row = MDBoxLayout(orientation="horizontal", spacing=dp(8), size_hint_y=None, height=dp(40))
+        filter_items = [
+            ("الكل", "all"), ("نشط", "active"), ("معطل", "disabled"),
+            ("شادوبان", "shadowban"), ("خاص", "private"), ("مخترق", "hacked"),
+        ]
+        for label, val in filter_items:
+            btn = MDFlatButton(
+                text=label,
+                size_hint_x=None,
+                width=dp(80),
+                on_release=lambda x, v=val: self.set_filter(v),
+            )
+            filter_row.add_widget(btn)
+        controls.add_widget(filter_row)
+        root.add_widget(controls)
+
+        # Export buttons
+        export_row = MDBoxLayout(
+            orientation="horizontal",
+            size_hint_y=None,
+            height=dp(52),
+            padding=[dp(12), dp(4)],
+            spacing=dp(8),
+        )
+        for label, action in [
+            ("📄 HTML", self.export_html),
+            ("📊 JSON", self.export_json),
+            ("📑 CSV", self.export_csv),
+            ("🗑️ مسح الكل", self.confirm_clear),
+        ]:
+            color = (0.937, 0.267, 0.267, 1) if "مسح" in label else (0.486, 0.227, 0.918, 1)
+            btn = MDRaisedButton(text=label, md_bg_color=color, on_release=action)
+            export_row.add_widget(btn)
+        root.add_widget(export_row)
+
+        scroll = ScrollView()
+        self.table_box = MDBoxLayout(
+            orientation="vertical",
+            spacing=dp(4),
+            padding=dp(8),
+            size_hint_y=None,
+        )
+        self.table_box.bind(minimum_height=self.table_box.setter("height"))
+        scroll.add_widget(self.table_box)
+        root.add_widget(scroll)
+        self.add_widget(root)
 
     def on_enter(self):
-        self.filter_scans(self._current_filter)
+        self.load_data()
 
-    def filter_scans(self, status: str):
-        self._current_filter = status
-        db = Database()
-        scans = db.get_all_scans(status)
-        self._render(scans)
+    def on_search(self, instance, text):
+        self.current_search = text
+        self.load_data()
 
-    def _render(self, scans):
-        box = self.ids.results_box
-        box.clear_widgets()
-        self.ids.count_label.text = f"{len(scans)} result(s)"
-        for scan in scans:
-            box.add_widget(ScanRow(scan))
+    def set_filter(self, val):
+        self.current_filter = val
+        self.load_data()
+
+    def load_data(self):
+        self.table_box.clear_widgets()
+        scans = get_all_scans(
+            limit=500,
+            status_filter=self.current_filter if self.current_filter != "all" else None,
+            search=self.current_search if self.current_search else None,
+        )
         if not scans:
-            box.add_widget(MDLabel(
-                text="No results found.",
-                theme_text_color="Custom",
-                text_color=get_color_from_hex("#475569"),
+            self.table_box.add_widget(MDLabel(
+                text="لا توجد نتائج.",
                 font_style="Body2",
+                theme_text_color="Secondary",
+                halign="center",
                 size_hint_y=None,
-                height=dp(48),
+                height=dp(60),
+            ))
+            return
+
+        # Header row
+        header_row = MDBoxLayout(
+            orientation="horizontal",
+            size_hint_y=None,
+            height=dp(32),
+            md_bg_color=(0.1, 0.07, 0.2, 1),
+            padding=[dp(8), 0],
+        )
+        for text, hint in [("المستخدم", 0.35), ("الحالة", 0.25), ("متابعون", 0.2), ("التاريخ", 0.2)]:
+            header_row.add_widget(MDLabel(
+                text=text,
+                font_style="Caption",
+                theme_text_color="Custom",
+                text_color=(0.655, 0.231, 0.929, 1),
+                size_hint_x=hint,
+                bold=True,
+            ))
+        self.table_box.add_widget(header_row)
+
+        for s in scans:
+            status = s.get("status", "unknown")
+            status_label = STATUS_LABELS_AR.get(status, "غير معروف")
+            color_hex = STATUS_COLORS.get(status, "#475569")
+            r, g, b = [int(color_hex.lstrip("#")[i:i+2], 16) / 255 for i in (0, 2, 4)]
+            date_str = s.get("scanned_at", "")[:10]
+
+            row = MDBoxLayout(
+                orientation="horizontal",
+                size_hint_y=None,
+                height=dp(40),
+                padding=[dp(8), dp(4)],
+            )
+            row.add_widget(MDLabel(
+                text=f"@{s.get('username', '')}",
+                font_style="Body2",
+                size_hint_x=0.35,
+            ))
+            row.add_widget(MDLabel(
+                text=status_label,
+                font_style="Caption",
+                theme_text_color="Custom",
+                text_color=(r, g, b, 1),
+                size_hint_x=0.25,
                 halign="center",
             ))
+            row.add_widget(MDLabel(
+                text=f"{s.get('followers', 0):,}",
+                font_style="Caption",
+                theme_text_color="Secondary",
+                size_hint_x=0.2,
+                halign="center",
+            ))
+            row.add_widget(MDLabel(
+                text=date_str,
+                font_style="Caption",
+                theme_text_color="Secondary",
+                size_hint_x=0.2,
+                halign="center",
+            ))
+            self.table_box.add_widget(row)
 
-    def export_html(self):
-        db = Database()
-        scans = db.get_all_scans()
-        html = _html_report(scans)
-        path = os.path.join(
-            _export_dir(),
-            f"igmanager_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
-        )
-        with open(path, "w", encoding="utf-8") as f:
-            f.write(html)
-        self._toast(f"Exported: {path}")
+    def export_html(self, *args):
+        path = export_to_html()
+        self._show_msg("تم التصدير", f"تم حفظ التقرير في:\n{path}")
 
-    def export_json(self):
-        db = Database()
-        scans = db.get_all_scans()
-        path = os.path.join(
-            _export_dir(),
-            f"igmanager_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
-        )
-        with open(path, "w", encoding="utf-8") as f:
-            json.dump(scans, f, ensure_ascii=False, indent=2)
-        self._toast(f"Exported: {path}")
+    def export_json(self, *args):
+        path = export_to_json()
+        self._show_msg("تم التصدير", f"تم حفظ JSON في:\n{path}")
 
-    def confirm_clear(self):
-        self._dialog = MDDialog(
-            title="Clear All Data",
-            text="This will permanently delete ALL scan results. Are you sure?",
+    def export_csv(self, *args):
+        path = export_to_csv()
+        if path:
+            self._show_msg("تم التصدير", f"تم حفظ CSV في:\n{path}")
+        else:
+            self._show_msg("تنبيه", "لا توجد بيانات للتصدير.")
+
+    def confirm_clear(self, *args):
+        if self.dialog:
+            self.dialog.dismiss()
+        self.dialog = MDDialog(
+            title="⚠️ تأكيد المسح",
+            text="هل أنت متأكد من مسح جميع البيانات؟ لا يمكن التراجع عن هذا الإجراء.",
             buttons=[
-                MDFlatButton(
-                    text="CANCEL",
-                    on_release=lambda x: self._dialog.dismiss(),
-                ),
+                MDFlatButton(text="إلغاء", on_release=lambda x: self.dialog.dismiss()),
                 MDRaisedButton(
-                    text="DELETE",
-                    md_bg_color=get_color_from_hex("#ef4444"),
-                    on_release=self._do_clear,
+                    text="مسح الكل",
+                    md_bg_color=(0.937, 0.267, 0.267, 1),
+                    on_release=self.do_clear,
                 ),
             ],
         )
-        self._dialog.open()
+        self.dialog.open()
 
-    def _do_clear(self, *_):
-        if self._dialog:
-            self._dialog.dismiss()
-        Database().clear_all_scans()
-        self.filter_scans("all")
+    def do_clear(self, *args):
+        if self.dialog:
+            self.dialog.dismiss()
+        clear_all()
+        self.load_data()
+        self._show_msg("تم", "تم مسح جميع البيانات بنجاح.")
 
-    def _toast(self, msg: str):
-        from kivymd.toast import toast
-        toast(msg)
+    def _show_msg(self, title, text):
+        if self.dialog:
+            self.dialog.dismiss()
+        self.dialog = MDDialog(
+            title=title,
+            text=text,
+            buttons=[MDFlatButton(text="حسناً", on_release=lambda x: self.dialog.dismiss())],
+        )
+        self.dialog.open()
