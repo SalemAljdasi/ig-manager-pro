@@ -32,17 +32,17 @@ name: Build IG Manager Pro APK
           uses: actions/cache@v4
           with:
             path: ~/.cache/pip
-            key: ${{ runner.os }}-pip-py310-v2-${{ hashFiles('requirements.txt') }}
+            key: ${{ runner.os }}-pip-py310-p4a2309-${{ hashFiles('requirements.txt') }}
             restore-keys: |
-              ${{ runner.os }}-pip-py310-v2-
+              ${{ runner.os }}-pip-py310-p4a2309-
 
         - name: Cache Buildozer global directory
           uses: actions/cache@v4
           with:
             path: ~/.buildozer
-            key: ${{ runner.os }}-buildozer-v4-py311-6-${{ hashFiles('buildozer.spec') }}
+            key: ${{ runner.os }}-buildozer-v5-p4a2309-${{ hashFiles('buildozer.spec') }}
             restore-keys: |
-              ${{ runner.os }}-buildozer-v4-py311-6-
+              ${{ runner.os }}-buildozer-v5-p4a2309-
 
         - name: Install System Dependencies
           run: |
@@ -67,10 +67,11 @@ name: Build IG Manager Pro APK
             echo "JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64" >> $GITHUB_ENV
             echo "/usr/lib/jvm/java-17-openjdk-amd64/bin" >> $GITHUB_PATH
 
-        - name: Install Buildozer and Cython
+        - name: Install Build Tools
           run: |
             pip install --upgrade pip setuptools wheel
             pip install 'cython==0.29.37'
+            pip install 'python-for-android==2023.9.16'
             pip install 'buildozer==1.5.0'
 
         - name: Accept Android SDK Licenses
@@ -90,12 +91,10 @@ name: Build IG Manager Pro APK
 
         - name: Verify APK was created
           run: |
-            echo "=== Contents of bin/ ==="
-            ls -lh bin/ 2>/dev/null || echo "bin/ does not exist"
-            APK=$(find . -name "*.apk" 2>/dev/null | head -5)
+            APK=$(find . -name "*.apk" 2>/dev/null | head -1)
             if [ -z "$APK" ]; then
-              echo "No APK found. Last 150 lines of log:"
-              tail -150 buildozer.log
+              echo "No APK found. Last 200 lines of log:"
+              tail -200 buildozer.log
               exit 1
             else
               echo "APK found: $APK"
@@ -126,7 +125,8 @@ name: Build IG Manager Pro APK
             APK=$(find bin/ -name "*.apk" 2>/dev/null | head -1)
             if [ -n "$APK" ]; then
               SIZE=$(du -sh "$APK" | cut -f1)
-              echo "✅ APK built! Size: $SIZE — download from Artifacts." >> $GITHUB_STEP_SUMMARY
+              echo "✅ APK built! Size: $SIZE" >> $GITHUB_STEP_SUMMARY
+              echo "Download from the Artifacts section above." >> $GITHUB_STEP_SUMMARY
             else
               echo "❌ Build failed. Download buildozer-log artifact for details." >> $GITHUB_STEP_SUMMARY
             fi
