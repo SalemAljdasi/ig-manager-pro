@@ -1,134 +1,133 @@
 name: Build IG Manager Pro APK
 
-on:
-  push:
-    branches: [ main ]
-    paths:
-      - 'main.py'
-      - 'buildozer.spec'
-      - 'requirements.txt'
-      - 'assets/**'
-      - 'core/**'
-      - 'models/**'
-      - 'screens/**'
-  workflow_dispatch:
+  on:
+    push:
+      branches: [ main ]
+      paths:
+        - 'main.py'
+        - 'buildozer.spec'
+        - 'requirements.txt'
+        - 'assets/**'
+        - 'core/**'
+        - 'models/**'
+        - 'screens/**'
+    workflow_dispatch:
 
-jobs:
-  build:
-    name: Build Android APK
-    runs-on: ubuntu-22.04
-    timeout-minutes: 90
+  jobs:
+    build:
+      name: Build Android APK
+      runs-on: ubuntu-22.04
+      timeout-minutes: 120
 
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+      steps:
+        - name: Checkout Repository
+          uses: actions/checkout@v4
 
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
+        - name: Set up Python 3.10
+          uses: actions/setup-python@v5
+          with:
+            python-version: '3.10'
 
-      - name: Cache pip packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
+        - name: Cache pip packages
+          uses: actions/cache@v4
+          with:
+            path: ~/.cache/pip
+            key: ${{ runner.os }}-pip-py310-v2-${{ hashFiles('requirements.txt') }}
+            restore-keys: |
+              ${{ runner.os }}-pip-py310-v2-
 
-      - name: Cache Buildozer global directory
-        uses: actions/cache@v4
-        with:
-          path: ~/.buildozer
-          key: ${{ runner.os }}-buildozer-v2-${{ hashFiles('buildozer.spec') }}
-          restore-keys: |
-            ${{ runner.os }}-buildozer-v2-
+        - name: Cache Buildozer global directory
+          uses: actions/cache@v4
+          with:
+            path: ~/.buildozer
+            key: ${{ runner.os }}-buildozer-v4-py311-6-${{ hashFiles('buildozer.spec') }}
+            restore-keys: |
+              ${{ runner.os }}-buildozer-v4-py311-6-
 
-      - name: Install System Dependencies
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends \
-            git zip unzip openjdk-17-jdk \
-            build-essential ccache libffi-dev libssl-dev \
-            python3-pip python3-setuptools python3-wheel \
-            autoconf automake libtool \
-            libsqlite3-dev \
-            zlib1g-dev libncurses5-dev libncursesw5-dev \
-            libreadline-dev libgdbm-dev libdb5.3-dev \
-            libbz2-dev libexpat1-dev liblzma-dev \
-            lzma lzma-dev \
-            cmake ninja-build pkg-config
+        - name: Install System Dependencies
+          run: |
+            sudo apt-get update -qq
+            sudo apt-get install -y --no-install-recommends \
+              git zip unzip \
+              openjdk-17-jdk \
+              build-essential ccache \
+              libffi-dev libssl-dev \
+              python3-pip python3-setuptools python3-wheel \
+              autoconf automake libtool \
+              libsqlite3-dev \
+              zlib1g-dev libncurses5-dev libncursesw5-dev \
+              libreadline-dev libgdbm-dev libdb5.3-dev \
+              libbz2-dev libexpat1-dev liblzma-dev \
+              lzma lzma-dev \
+              cmake ninja-build pkg-config \
+              libltdl-dev patch
 
-      - name: Set JAVA_HOME
-        run: |
-          echo "JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64" >> $GITHUB_ENV
-          echo "/usr/lib/jvm/java-17-openjdk-amd64/bin" >> $GITHUB_PATH
+        - name: Set JAVA_HOME
+          run: |
+            echo "JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64" >> $GITHUB_ENV
+            echo "/usr/lib/jvm/java-17-openjdk-amd64/bin" >> $GITHUB_PATH
 
-      - name: Install Buildozer and Cython
-        run: |
-          pip install --upgrade pip setuptools wheel
-          pip install cython==0.29.37
-          pip install buildozer==1.5.0
+        - name: Install Buildozer and Cython
+          run: |
+            pip install --upgrade pip setuptools wheel
+            pip install 'cython==0.29.37'
+            pip install 'buildozer==1.5.0'
 
-      - name: Accept Android SDK Licenses
-        run: |
-          mkdir -p ~/.android
-          echo "count=0" > ~/.android/repositories.cfg
-          yes | buildozer android update 2>/dev/null || true
+        - name: Accept Android SDK Licenses
+          run: |
+            mkdir -p ~/.android
+            echo "count=0" > ~/.android/repositories.cfg
+            yes | buildozer android update 2>/dev/null || true
 
-      - name: Build APK with Buildozer
-        run: |
-          set -o pipefail
-          buildozer -v android debug 2>&1 | tee buildozer.log
-        env:
-          BUILDOZER_WARN_ON_ROOT: "0"
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        - name: Build APK
+          run: |
+            set -o pipefail
+            buildozer -v android debug 2>&1 | tee buildozer.log
+          env:
+            BUILDOZER_WARN_ON_ROOT: "0"
+            TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+            TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
 
-      - name: Verify APK was created
-        run: |
-          echo "=== Checking bin/ directory ==="
-          ls -lh bin/ 2>/dev/null || echo "bin/ does not exist"
-          APK=$(find . -name "*.apk" 2>/dev/null | head -5)
-          if [ -z "$APK" ]; then
-            echo "❌ ERROR: No APK file found! Build likely failed."
-            echo "=== Last 100 lines of buildozer.log ==="
-            tail -100 buildozer.log
-            exit 1
-          else
-            echo "✅ APK found: $APK"
-            ls -lh $APK
-          fi
+        - name: Verify APK was created
+          run: |
+            echo "=== Contents of bin/ ==="
+            ls -lh bin/ 2>/dev/null || echo "bin/ does not exist"
+            APK=$(find . -name "*.apk" 2>/dev/null | head -5)
+            if [ -z "$APK" ]; then
+              echo "No APK found. Last 150 lines of log:"
+              tail -150 buildozer.log
+              exit 1
+            else
+              echo "APK found: $APK"
+              ls -lh $APK
+            fi
 
-      - name: Upload APK Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: IG-Manager-Pro-v4.0-APK
-          path: bin/*.apk
-          if-no-files-found: error
-          retention-days: 30
+        - name: Upload APK Artifact
+          uses: actions/upload-artifact@v4
+          with:
+            name: IG-Manager-Pro-v4.0-APK
+            path: bin/*.apk
+            if-no-files-found: error
+            retention-days: 30
 
-      - name: Upload Build Log
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: buildozer-log-${{ github.run_number }}
-          path: buildozer.log
-          if-no-files-found: ignore
-          retention-days: 7
+        - name: Upload Build Log
+          if: always()
+          uses: actions/upload-artifact@v4
+          with:
+            name: buildozer-log-${{ github.run_number }}
+            path: buildozer.log
+            if-no-files-found: ignore
+            retention-days: 7
 
-      - name: Build Summary
-        if: always()
-        run: |
-          echo "## IG Manager Pro v4.0 Build Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          APK=$(find bin/ -name "*.apk" 2>/dev/null | head -1)
-          if [ -n "$APK" ]; then
-            SIZE=$(du -sh "$APK" | cut -f1)
-            echo "✅ **APK built successfully!**" >> $GITHUB_STEP_SUMMARY
-            echo "- File: \`$APK\`" >> $GITHUB_STEP_SUMMARY
-            echo "- Size: $SIZE" >> $GITHUB_STEP_SUMMARY
-            echo "- Download from the **Artifacts** section above." >> $GITHUB_STEP_SUMMARY
-          else
-            echo "❌ **APK build failed.** Download \`buildozer-log\` artifact for details." >> $GITHUB_STEP_SUMMARY
-          fi
+        - name: Build Summary
+          if: always()
+          run: |
+            echo "## IG Manager Pro v4.0 Build Summary" >> $GITHUB_STEP_SUMMARY
+            APK=$(find bin/ -name "*.apk" 2>/dev/null | head -1)
+            if [ -n "$APK" ]; then
+              SIZE=$(du -sh "$APK" | cut -f1)
+              echo "✅ APK built! Size: $SIZE — download from Artifacts." >> $GITHUB_STEP_SUMMARY
+            else
+              echo "❌ Build failed. Download buildozer-log artifact for details." >> $GITHUB_STEP_SUMMARY
+            fi
+  
