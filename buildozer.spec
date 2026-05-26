@@ -1,75 +1,48 @@
 [app]
-# ── Identity ──────────────────────────────────────────────────────────────────
-title           = IG Manager Pro
-package.name    = igmanagerpro
-package.domain  = com.igmanager
-source.dir      = .
-source.include_exts = py,kv,png,jpg,jpeg,ttf,db,json,txt
+title = IG Manager Pro
+package.name = igmanagerpro
+package.domain = com.igmanager.pro
+source.dir = .
+source.include_exts = py,png,jpg,kv,atlas,json
+source.exclude_dirs = tests, bin, .git, __pycache__, .github
+version = 4.0
 
-# ── Version ───────────────────────────────────────────────────────────────────
-version         = 1.0.0
+requirements = python3,kivy==2.3.0,kivymd==1.2.0,requests,pillow,sqlite3,certifi,charset-normalizer,idna,urllib3
 
-# ── Requirements ─────────────────────────────────────────────────────────────
-# IMPORTANT: No Rust-compiled packages (no pydantic-core, cryptography, etc.)
-requirements    = python3,\
-                  kivy==2.3.0,\
-                  kivymd==1.2.0,\
-                  requests,\
-                  certifi,\
-                  urllib3,\
-                  charset-normalizer,\
-                  idna,\
-                  sqlite3
+orientation = portrait
+fullscreen = 0
+android.archs = arm64-v8a, armeabi-v7a
 
-# ── Orientation & UI ──────────────────────────────────────────────────────────
-orientation     = portrait
-fullscreen      = 0
-icon.filename   = %(source.dir)s/assets/icon.png
-presplash.filename = %(source.dir)s/assets/presplash.png
-
-# ── Android settings ──────────────────────────────────────────────────────────
 [buildozer]
-log_level       = 2
-warn_on_root    = 1
+log_level = 2
+warn_on_root = 1
 
-[android]
-android.api             = 33
-android.minapi          = 30
-android.ndk             = 25c
-android.sdk             = 33
-android.ndk_api         = 21
-android.arch            = arm64-v8a
-android.release_artifact = apk
+[app:android]
+android.api = 33
+android.minapi = 30
+android.sdk = 33
+android.ndk = 25b
+android.ndk_api = 21
+android.private_storage = True
+android.accept_sdk_license = True
+android.allow_backup = True
+android.skip_update = False
+android.permissions = INTERNET,READ_EXTERNAL_STORAGE,WRITE_EXTERNAL_STORAGE,ACCESS_NETWORK_STATE
+android.gradle_dependencies =
+android.enable_androidx = True
 
-android.permissions = \
-    INTERNET,\
-    READ_EXTERNAL_STORAGE,\
-    WRITE_EXTERNAL_STORAGE,\
-    ACCESS_NETWORK_STATE
+# App icon & presplash
+#icon.filename = %(source.dir)s/assets/icon.png
+#presplash.filename = %(source.dir)s/assets/presplash.png
+presplash.color = #0A0A1A
+android.presplash_color = #0A0A1A
 
-# KivyMD requires Material icons font
-android.add_aars = 
+# Buildozer bootstrap
+p4a.branch = master
 
-# Extra Java sources (not needed for pure Python/Kivy)
-# android.add_src =
-
-# p4a (python-for-android) options
-p4a.branch       = develop
-p4a.bootstrap    = sdl2
-p4a.local_recipes = 
-
-# Gradle
-android.gradle_dependencies = 
-android.enable_androidx    = True
-
-# ── iOS (disabled) ────────────────────────────────────────────────────────────
-[ios]
-# Not targeted
-ios.kivy_ios_url   = https://github.com/kivy/kivy-ios
+[app:ios]
+ios.kivy_ios_url = https://github.com/kivy/kivy-ios
 ios.kivy_ios_branch = master
-
-# ── Debug signing ─────────────────────────────────────────────────────────────
-# For release: set android.release_artifact and provide keystore details
-# android.keystore   = /path/to/your.keystore
-# android.keystore_alias = myalias
-# android.keystore_password = mypassword
+ios.ios_deploy_url = https://github.com/phonegap/ios-deploy
+ios.ios_deploy_branch = 1.10.0
+ios.codesign.allowed = false
