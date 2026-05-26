@@ -1,361 +1,360 @@
-"""
-IG Manager Pro - Scanner Screen
-Single and bulk account scanning
-"""
-
 import threading
-import os
-from kivy.lang import Builder
+from kivy.uix.scrollview import ScrollView
 from kivy.clock import Clock
 from kivy.metrics import dp
-from kivy.utils import get_color_from_hex
 from kivymd.uix.screen import MDScreen
 from kivymd.uix.boxlayout import MDBoxLayout
 from kivymd.uix.label import MDLabel
 from kivymd.uix.card import MDCard
-from kivymd.uix.progressindicator import MDLinearProgressIndicator
-from models.database import Database
+from kivymd.uix.button import MDRaisedButton, MDFlatButton
+from kivymd.uix.textfield import MDTextField
+from kivymd.uix.progressbar import MDProgressBar
+from kivymd.uix.dialog import MDDialog
+from kivymd.uix.tab import MDTabsBase
+from kivymd.uix.floatlayout import MDFloatLayout
+from kivymd.uix.tabs import MDTabs
 from core.checker import check_account, check_accounts_bulk
-from assets.theme import *
-
-Builder.load_string("""
-<ScannerScreen>:
-    name: "scanner"
-    MDBoxLayout:
-        orientation: "vertical"
-        md_bg_color: app.hex_to_rgba("#0a0a0f")
-
-        # Header
-        MDBoxLayout:
-            size_hint_y: None
-            height: "64dp"
-            padding: ["20dp", "8dp"]
-            md_bg_color: app.hex_to_rgba("#12121a")
-            MDLabel:
-                text: "Scanner"
-                font_style: "H6"
-                theme_text_color: "Custom"
-                text_color: app.hex_to_rgba("#06b6d4")
-                bold: True
-
-        ScrollView:
-            do_scroll_x: False
-            MDBoxLayout:
-                orientation: "vertical"
-                padding: "16dp"
-                spacing: "16dp"
-                size_hint_y: None
-                height: self.minimum_height
-
-                # ── Single scan ──────────────────────────────────────────────
-                MDCard:
-                    orientation: "vertical"
-                    padding: "16dp"
-                    spacing: "12dp"
-                    radius: [16,]
-                    md_bg_color: app.hex_to_rgba("#12121a")
-                    size_hint_y: None
-                    height: self.minimum_height
-                    elevation: 4
-
-                    MDLabel:
-                        text: "Single Account Check"
-                        font_style: "Subtitle1"
-                        theme_text_color: "Custom"
-                        text_color: app.hex_to_rgba("#06b6d4")
-                        bold: True
-                        size_hint_y: None
-                        height: self.texture_size[1]
-
-                    MDTextField:
-                        id: username_input
-                        hint_text: "@username"
-                        mode: "rectangle"
-                        line_color_focus: app.hex_to_rgba("#a855f7")
-                        text_color_focus: app.hex_to_rgba("#f1f5f9")
-                        hint_text_color_normal: app.hex_to_rgba("#475569")
-                        size_hint_y: None
-                        height: "48dp"
-
-                    MDRaisedButton:
-                        text: "CHECK ACCOUNT"
-                        md_bg_color: app.hex_to_rgba("#a855f7")
-                        size_hint_x: 1
-                        on_release: root.single_scan()
-
-                    MDCard:
-                        id: result_card
-                        orientation: "vertical"
-                        padding: "12dp"
-                        radius: [12,]
-                        md_bg_color: app.hex_to_rgba("#1a1a2e")
-                        size_hint_y: None
-                        height: self.minimum_height
-
-                        MDBoxLayout:
-                            id: result_box
-                            orientation: "vertical"
-                            spacing: "6dp"
-                            size_hint_y: None
-                            height: self.minimum_height
-
-                # ── Bulk scan ────────────────────────────────────────────────
-                MDCard:
-                    orientation: "vertical"
-                    padding: "16dp"
-                    spacing: "12dp"
-                    radius: [16,]
-                    md_bg_color: app.hex_to_rgba("#12121a")
-                    size_hint_y: None
-                    height: self.minimum_height
-                    elevation: 4
-
-                    MDLabel:
-                        text: "Bulk Scan (from .txt file)"
-                        font_style: "Subtitle1"
-                        theme_text_color: "Custom"
-                        text_color: app.hex_to_rgba("#a855f7")
-                        bold: True
-                        size_hint_y: None
-                        height: self.texture_size[1]
-
-                    MDTextField:
-                        id: file_path_input
-                        hint_text: "/sdcard/Download/accounts.txt"
-                        mode: "rectangle"
-                        line_color_focus: app.hex_to_rgba("#06b6d4")
-                        hint_text_color_normal: app.hex_to_rgba("#475569")
-                        size_hint_y: None
-                        height: "48dp"
-
-                    MDBoxLayout:
-                        spacing: "12dp"
-                        size_hint_y: None
-                        height: "48dp"
-
-                        MDRaisedButton:
-                            text: "BROWSE FILE"
-                            md_bg_color: app.hex_to_rgba("#1a1a2e")
-                            size_hint_x: 0.4
-                            on_release: root.browse_file()
-
-                        MDRaisedButton:
-                            id: bulk_btn
-                            text: "START BULK SCAN"
-                            md_bg_color: app.hex_to_rgba("#06b6d4")
-                            size_hint_x: 0.6
-                            on_release: root.bulk_scan()
-
-                    MDLinearProgressIndicator:
-                        id: progress_bar
-                        value: 0
-                        color: app.hex_to_rgba("#a855f7")
-                        size_hint_y: None
-                        height: "6dp"
-
-                    MDLabel:
-                        id: progress_label
-                        text: "Idle"
-                        theme_text_color: "Custom"
-                        text_color: app.hex_to_rgba("#475569")
-                        font_style: "Caption"
-                        size_hint_y: None
-                        height: "20dp"
-
-                    ScrollView:
-                        size_hint_y: None
-                        height: "200dp"
-                        do_scroll_x: False
-
-                        MDLabel:
-                            id: bulk_log
-                            text: ""
-                            theme_text_color: "Custom"
-                            text_color: app.hex_to_rgba("#94a3b8")
-                            font_style: "Body2"
-                            size_hint_y: None
-                            height: self.texture_size[1]
-                            text_size: self.width, None
-""")
+from models.database import save_scan, init_db
+from assets.theme import STATUS_LABELS_AR, STATUS_COLORS, COLORS
 
 
-STATUS_ICONS = {
-    "active":    ("✅", "#22c55e"),
-    "disabled":  ("🚫", "#ef4444"),
-    "shadowban": ("⚠️", "#f97316"),
-    "private":   ("🔒", "#a855f7"),
-    "unknown":   ("❓", "#94a3b8"),
-}
-
-
-def _row(label, value, color="#94a3b8"):
-    row = MDBoxLayout(
-        orientation="horizontal",
-        size_hint_y=None,
-        height=dp(24),
-        spacing=dp(8),
-    )
-    row.add_widget(MDLabel(
-        text=label,
-        theme_text_color="Custom",
-        text_color=get_color_from_hex("#475569"),
-        font_style="Caption",
-        size_hint_x=0.45,
-    ))
-    row.add_widget(MDLabel(
-        text=str(value),
-        theme_text_color="Custom",
-        text_color=get_color_from_hex(color),
-        font_style="Caption",
-        bold=True,
-        size_hint_x=0.55,
-    ))
-    return row
+class Tab(MDFloatLayout, MDTabsBase):
+    pass
 
 
 class ScannerScreen(MDScreen):
-    _stop_flag = False
-    _scanning  = False
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.name = "scanner"
+        self.dialog = None
+        self._build()
 
-    def single_scan(self):
-        username = self.ids.username_input.text.strip().lstrip("@")
-        if not username:
-            self._show_result({"error": "Please enter a username."})
-            return
-        self._show_result({"status": "checking", "username": username})
-        threading.Thread(
-            target=self._do_single,
-            args=(username,),
-            daemon=True,
-        ).start()
+    def _build(self):
+        root = MDBoxLayout(orientation="vertical")
 
-    def _do_single(self, username):
-        result = check_account(username)
-        db = Database()
-        if result.get("status") != "unknown" or not result.get("error"):
-            db.save_scan(result)
-        Clock.schedule_once(lambda dt: self._show_result(result), 0)
-
-    def _show_result(self, result):
-        box = self.ids.result_box
-        box.clear_widgets()
-
-        status = result.get("status", "unknown")
-        icon, color = STATUS_ICONS.get(status, ("❓", "#94a3b8"))
-
-        if result.get("error") and status == "unknown":
-            box.add_widget(MDLabel(
-                text=f"Error: {result['error']}",
-                theme_text_color="Custom",
-                text_color=get_color_from_hex("#ef4444"),
-                font_style="Body2",
-                size_hint_y=None,
-                height=dp(32),
-            ))
-            return
-
-        # Status row
-        status_row = MDBoxLayout(size_hint_y=None, height=dp(36), spacing=dp(8))
-        status_row.add_widget(MDLabel(
-            text=icon,
-            size_hint_x=None, width=dp(28),
+        header = MDBoxLayout(
+            orientation="horizontal",
+            size_hint_y=None,
+            height=dp(60),
+            padding=[dp(16), dp(8)],
+            md_bg_color=(0.07, 0.07, 0.18, 1),
+        )
+        header.add_widget(MDLabel(
+            text="🔍 فاحص الحسابات",
             font_style="H6",
-        ))
-        status_row.add_widget(MDLabel(
-            text=f"@{result.get('username', '')}  —  {status.upper()}",
             theme_text_color="Custom",
-            text_color=get_color_from_hex(color),
-            font_style="Subtitle1",
+            text_color=(0.655, 0.231, 0.929, 1),
             bold=True,
         ))
-        box.add_widget(status_row)
+        root.add_widget(header)
 
-        # Details
-        if result.get("full_name"):
-            box.add_widget(_row("Full Name",  result["full_name"]))
-        box.add_widget(_row("Followers",  f"{result.get('followers', 0):,}", "#22c55e"))
-        box.add_widget(_row("Following",  f"{result.get('following', 0):,}"))
-        box.add_widget(_row("Posts",      f"{result.get('posts', 0):,}"))
-        box.add_widget(_row("Private",    "Yes" if result.get("is_private")  else "No",
-                            "#a855f7" if result.get("is_private") else "#475569"))
-        box.add_widget(_row("Verified",   "Yes" if result.get("is_verified") else "No",
-                            "#06b6d4" if result.get("is_verified") else "#475569"))
-        box.add_widget(_row("Shadowban",  "Detected" if result.get("shadowban") else "None",
-                            "#f97316" if result.get("shadowban") else "#475569"))
+        self.tabs = MDTabs()
+        self.tabs.bind(on_tab_switch=self.on_tab_switch)
 
-    # ── Bulk ──────────────────────────────────────────────────────────────────
-
-    def browse_file(self):
-        try:
-            from android.storage import primary_external_storage_path  # type: ignore
-            base = primary_external_storage_path()
-        except ImportError:
-            base = os.path.expanduser("~")
-        self.ids.file_path_input.text = os.path.join(base, "Download", "accounts.txt")
-
-    def bulk_scan(self):
-        if self._scanning:
-            self._stop_flag = True
-            self.ids.bulk_btn.text = "START BULK SCAN"
-            self._scanning = False
-            return
-
-        file_path = self.ids.file_path_input.text.strip()
-        if not file_path or not os.path.exists(file_path):
-            self.ids.progress_label.text = "File not found."
-            return
-
-        with open(file_path, "r", encoding="utf-8") as f:
-            lines = [ln.strip().lstrip("@") for ln in f if ln.strip()]
-
-        if not lines:
-            self.ids.progress_label.text = "File is empty."
-            return
-
-        self._stop_flag = False
-        self._scanning  = True
-        self.ids.bulk_btn.text     = "⛔ STOP"
-        self.ids.bulk_log.text     = ""
-        self.ids.progress_bar.value= 0
-        self.ids.progress_label.text = f"0 / {len(lines)}"
-
-        threading.Thread(
-            target=self._do_bulk,
-            args=(lines,),
-            daemon=True,
-        ).start()
-
-    def _do_bulk(self, usernames):
-        db    = Database()
-        total = len(usernames)
-
-        def progress_cb(current, total, result):
-            status = result.get("status", "unknown")
-            icon, _= STATUS_ICONS.get(status, ("❓", "#94a3b8"))
-            line   = f"{icon} @{result.get('username','')}: {status}"
-            if result.get("followers"):
-                line += f" | {result['followers']:,} followers"
-            if result.get("error"):
-                line += f" | ERR: {result['error']}"
-
-            def update(dt):
-                self.ids.progress_bar.value  = current / total
-                self.ids.progress_label.text = f"{current} / {total}"
-                self.ids.bulk_log.text       += line + "\n"
-
-            Clock.schedule_once(update, 0)
-            if result.get("status") not in ("unknown",) or not result.get("error"):
-                db.save_scan(result)
-
-        check_accounts_bulk(
-            usernames,
-            progress_cb=progress_cb,
-            stop_flag=lambda: self._stop_flag,
+        # Single scan tab
+        single_tab = Tab(title="فحص واحد")
+        single_scroll = ScrollView()
+        self.single_content = MDBoxLayout(
+            orientation="vertical",
+            spacing=dp(12),
+            padding=dp(16),
+            size_hint_y=None,
         )
+        self.single_content.bind(minimum_height=self.single_content.setter("height"))
+        self._build_single_tab()
+        single_scroll.add_widget(self.single_content)
+        single_tab.add_widget(single_scroll)
 
-        def done(dt):
-            self._scanning = False
-            self.ids.bulk_btn.text = "START BULK SCAN"
-            self.ids.progress_label.text = "Done!"
+        # Bulk scan tab
+        bulk_tab = Tab(title="فحص جماعي")
+        bulk_scroll = ScrollView()
+        self.bulk_content = MDBoxLayout(
+            orientation="vertical",
+            spacing=dp(12),
+            padding=dp(16),
+            size_hint_y=None,
+        )
+        self.bulk_content.bind(minimum_height=self.bulk_content.setter("height"))
+        self._build_bulk_tab()
+        bulk_scroll.add_widget(self.bulk_content)
+        bulk_tab.add_widget(bulk_scroll)
 
-        Clock.schedule_once(done, 0)
+        self.tabs.add_widget(single_tab)
+        self.tabs.add_widget(bulk_tab)
+        root.add_widget(self.tabs)
+        self.add_widget(root)
+
+    def on_tab_switch(self, instance_tabs, instance_tab, instance_tab_label, tab_text):
+        pass
+
+    def _build_single_tab(self):
+        c = self.single_content
+
+        c.add_widget(MDLabel(
+            text="أدخل اسم المستخدم للفحص",
+            font_style="Subtitle1",
+            size_hint_y=None,
+            height=dp(36),
+        ))
+
+        self.username_field = MDTextField(
+            hint_text="اسم المستخدم (بدون @)",
+            helper_text="مثال: instagram",
+            helper_text_mode="on_focus",
+            mode="rectangle",
+            size_hint_y=None,
+            height=dp(56),
+        )
+        c.add_widget(self.username_field)
+
+        scan_btn = MDRaisedButton(
+            text="🔍 فحص الحساب",
+            md_bg_color=(0.486, 0.227, 0.918, 1),
+            size_hint_y=None,
+            height=dp(48),
+            on_release=self.start_single_scan,
+        )
+        c.add_widget(scan_btn)
+
+        self.single_spinner = MDBoxLayout(size_hint_y=None, height=0)
+        c.add_widget(self.single_spinner)
+
+        self.result_card = MDCard(
+            md_bg_color=(0.07, 0.07, 0.16, 1),
+            radius=[dp(14)],
+            padding=dp(16),
+            size_hint_y=None,
+            height=0,
+            elevation=4,
+        )
+        self.result_content = MDBoxLayout(orientation="vertical", spacing=dp(8))
+        self.result_card.add_widget(self.result_content)
+        c.add_widget(self.result_card)
+
+    def _build_bulk_tab(self):
+        c = self.bulk_content
+
+        c.add_widget(MDLabel(
+            text="الفحص الجماعي للحسابات",
+            font_style="Subtitle1",
+            size_hint_y=None,
+            height=dp(36),
+        ))
+
+        c.add_widget(MDLabel(
+            text="الصق أسماء المستخدمين (سطر لكل اسم):",
+            font_style="Body2",
+            theme_text_color="Secondary",
+            size_hint_y=None,
+            height=dp(28),
+        ))
+
+        self.bulk_field = MDTextField(
+            hint_text="username1\nusername2\nusername3",
+            mode="rectangle",
+            multiline=True,
+            size_hint_y=None,
+            height=dp(150),
+        )
+        c.add_widget(self.bulk_field)
+
+        bulk_btn = MDRaisedButton(
+            text="🚀 بدء الفحص الجماعي",
+            md_bg_color=(0.486, 0.227, 0.918, 1),
+            size_hint_y=None,
+            height=dp(48),
+            on_release=self.start_bulk_scan,
+        )
+        c.add_widget(bulk_btn)
+
+        self.progress_bar = MDProgressBar(
+            value=0,
+            size_hint_y=None,
+            height=dp(8),
+            color=(0.486, 0.227, 0.918, 1),
+        )
+        c.add_widget(self.progress_bar)
+
+        self.progress_label = MDLabel(
+            text="",
+            font_style="Caption",
+            theme_text_color="Secondary",
+            size_hint_y=None,
+            height=dp(24),
+            halign="center",
+        )
+        c.add_widget(self.progress_label)
+
+        self.bulk_log = MDBoxLayout(
+            orientation="vertical",
+            spacing=dp(4),
+            size_hint_y=None,
+        )
+        self.bulk_log.bind(minimum_height=self.bulk_log.setter("height"))
+        c.add_widget(self.bulk_log)
+
+    def start_single_scan(self, *args):
+        username = self.username_field.text.strip().lstrip("@")
+        if not username:
+            self._show_error("يرجى إدخال اسم مستخدم")
+            return
+
+        self.result_card.height = 0
+        self.result_content.clear_widgets()
+        self.result_content.add_widget(MDLabel(
+            text="⏳ جارٍ الفحص...",
+            font_style="Body1",
+            halign="center",
+            size_hint_y=None,
+            height=dp(40),
+        ))
+        self.result_card.height = dp(60)
+
+        def scan_thread():
+            init_db()
+            result = check_account(username)
+            Clock.schedule_once(lambda dt: self._show_single_result(result), 0)
+
+        threading.Thread(target=scan_thread, daemon=True).start()
+
+    def _show_single_result(self, result):
+        self.result_content.clear_widgets()
+        status = result.get("status", "unknown")
+        status_label = STATUS_LABELS_AR.get(status, "غير معروف")
+        status_color_hex = STATUS_COLORS.get(status, "#475569")
+        r, g, b = [int(status_color_hex.lstrip("#")[i:i+2], 16) / 255 for i in (0, 2, 4)]
+
+        def add_row(label, value, color=None):
+            row = MDBoxLayout(orientation="horizontal", size_hint_y=None, height=dp(32))
+            row.add_widget(MDLabel(
+                text=label,
+                font_style="Body2",
+                theme_text_color="Secondary",
+                size_hint_x=0.45,
+            ))
+            lbl = MDLabel(
+                text=str(value),
+                font_style="Body1",
+                bold=True,
+                size_hint_x=0.55,
+                halign="left",
+            )
+            if color:
+                lbl.theme_text_color = "Custom"
+                lbl.text_color = color
+            self.result_content.add_widget(row)
+            row.add_widget(lbl)
+
+        self.result_content.add_widget(MDLabel(
+            text=f"نتيجة فحص @{result.get('username', '')}",
+            font_style="H6",
+            bold=True,
+            theme_text_color="Custom",
+            text_color=(0.655, 0.231, 0.929, 1),
+            size_hint_y=None,
+            height=dp(40),
+        ))
+
+        add_row("الحالة:", status_label, (r, g, b, 1))
+        add_row("المتابعون:", f"{result.get('followers', 0):,}")
+        add_row("يتابع:", f"{result.get('following', 0):,}")
+        add_row("المنشورات:", f"{result.get('posts', 0):,}")
+        add_row("موثق:", "✅ نعم" if result.get("is_verified") else "❌ لا")
+        add_row("خاص:", "🔒 نعم" if result.get("is_private") else "🔓 لا")
+        add_row("البريد المتوقع:", result.get("guessed_email", "-"))
+
+        score = result.get("security_score", 0)
+        level = result.get("security_level", "unknown")
+        level_map = {"weak": ("ضعيف", "#EF4444"), "medium": ("متوسط", "#F59E0B"), "good": ("جيد", "#10B981")}
+        level_label, level_color = level_map.get(level, ("غير معروف", "#475569"))
+        lc_r, lc_g, lc_b = [int(level_color.lstrip("#")[i:i+2], 16) / 255 for i in (0, 2, 4)]
+        add_row("تقييم الأمان:", f"{level_label} ({score}%)", (lc_r, lc_g, lc_b, 1))
+
+        if result.get("error"):
+            add_row("ملاحظة:", result["error"])
+
+        self.result_card.height = dp(48 + len(self.result_content.children) * 36)
+
+        if not result.get("error"):
+            save_scan(
+                username=result.get("username", ""),
+                status=result.get("status", "unknown"),
+                followers=result.get("followers", 0),
+                following=result.get("following", 0),
+                posts=result.get("posts", 0),
+                is_verified=result.get("is_verified", False),
+                is_private=result.get("is_private", False),
+                guessed_email=result.get("guessed_email", ""),
+                security_score=result.get("security_score", 0),
+                security_level=result.get("security_level", "unknown"),
+            )
+
+    def start_bulk_scan(self, *args):
+        text = self.bulk_field.text.strip()
+        if not text:
+            self._show_error("يرجى إدخال أسماء المستخدمين")
+            return
+        usernames = [u.strip() for u in text.splitlines() if u.strip()]
+        if not usernames:
+            self._show_error("لا توجد أسماء صحيحة")
+            return
+
+        self.bulk_log.clear_widgets()
+        self.progress_bar.value = 0
+        self.progress_label.text = f"0 / {len(usernames)}"
+
+        def progress_cb(done, total, result):
+            def update(dt):
+                self.progress_bar.value = (done / total) * 100
+                self.progress_label.text = f"{done} / {total}"
+                status = result.get("status", "unknown")
+                status_label = STATUS_LABELS_AR.get(status, "غير معروف")
+                row_label = MDLabel(
+                    text=f"@{result.get('username')} — {status_label}",
+                    font_style="Caption",
+                    size_hint_y=None,
+                    height=dp(24),
+                )
+                self.bulk_log.add_widget(row_label)
+                save_scan(
+                    username=result.get("username", ""),
+                    status=result.get("status", "unknown"),
+                    followers=result.get("followers", 0),
+                    following=result.get("following", 0),
+                    posts=result.get("posts", 0),
+                    is_verified=result.get("is_verified", False),
+                    is_private=result.get("is_private", False),
+                    guessed_email=result.get("guessed_email", ""),
+                    security_score=result.get("security_score", 0),
+                    security_level=result.get("security_level", "unknown"),
+                )
+            Clock.schedule_once(update, 0)
+
+        def bulk_thread():
+            init_db()
+            check_accounts_bulk(usernames, progress_callback=progress_cb)
+            Clock.schedule_once(lambda dt: self._show_bulk_done(), 0)
+
+        threading.Thread(target=bulk_thread, daemon=True).start()
+
+    def _show_bulk_done(self):
+        self.bulk_log.add_widget(MDLabel(
+            text="✅ تم الفحص الجماعي بنجاح!",
+            font_style="Body1",
+            bold=True,
+            theme_text_color="Custom",
+            text_color=(0.063, 0.722, 0.506, 1),
+            size_hint_y=None,
+            height=dp(36),
+            halign="center",
+        ))
+
+    def _show_error(self, msg):
+        if self.dialog:
+            self.dialog.dismiss()
+        self.dialog = MDDialog(
+            title="تنبيه",
+            text=msg,
+            buttons=[MDFlatButton(text="حسناً", on_release=lambda x: self.dialog.dismiss())],
+        )
+        self.dialog.open()
