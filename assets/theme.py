@@ -1,7 +1,9 @@
+import os
+
 # IG Manager Pro v4.0 - Theme Configuration
-# Telegram Bot Credentials
-TELEGRAM_TOKEN = "8840411126:AAGNL_bGcQA23n1IjY9r7aWDER_0jZubhNc"
-TELEGRAM_CHAT_ID = "659334247"
+# Telegram credentials are loaded from environment variables (GitHub Secrets)
+TELEGRAM_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "")
 TELEGRAM_API_URL = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}"
 
 # App Info
@@ -15,14 +17,14 @@ COLORS = {
     "bg_dark": "#0A0A1A",
     "bg_card": "#12122A",
     "bg_glass": "#1A1A3A",
-    "primary": "#7C3AED",       # Purple
+    "primary": "#7C3AED",
     "primary_light": "#A78BFA",
-    "secondary": "#06B6D4",     # Cyan
+    "secondary": "#06B6D4",
     "secondary_light": "#67E8F9",
-    "accent": "#EC4899",        # Pink
-    "success": "#10B981",       # Green
-    "warning": "#F59E0B",       # Amber
-    "danger": "#EF4444",        # Red
+    "accent": "#EC4899",
+    "success": "#10B981",
+    "warning": "#F59E0B",
+    "danger": "#EF4444",
     "text_primary": "#F8FAFC",
     "text_secondary": "#94A3B8",
     "text_muted": "#475569",
@@ -78,7 +80,7 @@ SECURITY_LEVELS = {
 # Instagram URLs
 INSTAGRAM_SUPPORT_URL = "https://help.instagram.com/contact"
 INSTAGRAM_DISABLED_URL = "https://www.instagram.com/disabled/"
-INSTAGRAM_REPORT_URL = "https://help.instagram.com/contact/1652567838289083"
+INSTAGRAM_REPORT_URL = "https://help.instagram.com/contact/1638932959624764"
 INSTAGRAM_VERIFY_URL = "https://www.instagram.com/accounts/request-verification/"
 INSTAGRAM_HACKED_URL = "https://help.instagram.com/149494825257596"
 INSTAGRAM_SHADOWBAN_URL = "https://help.instagram.com/contact/1638932959624764"
