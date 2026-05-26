@@ -2,7 +2,15 @@ name: Build IG Manager Pro APK
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main ]
+    paths:
+      - 'main.py'
+      - 'buildozer.spec'
+      - 'requirements.txt'
+      - 'assets/**'
+      - 'core/**'
+      - 'models/**'
+      - 'screens/**'
   workflow_dispatch:
 
 jobs:
@@ -76,6 +84,8 @@ jobs:
           buildozer -v android debug 2>&1 | tee buildozer.log
         env:
           BUILDOZER_WARN_ON_ROOT: "0"
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
 
       - name: Find APK
         id: find_apk
