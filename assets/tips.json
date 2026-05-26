@@ -1,0 +1,106 @@
+{
+  "recovery_tips": {
+    "ar": [
+      "تأكد من استخدام البريد الإلكتروني المسجل في الحساب عند التقديم للاسترداد.",
+      "قدم صورة واضحة لهويتك الشخصية إن طُلب منك ذلك.",
+      "اكتب رسالة مفصلة توضح سبب تعطيل حسابك وأنك لم تخالف الشروط.",
+      "تحلّ بالصبر، فقد يستغرق رد إنستغرام من 3 أيام إلى 30 يوماً.",
+      "تجنب إنشاء حسابات جديدة متكررة لأن ذلك قد يُقلل فرص الاسترداد.",
+      "إذا كان حسابك مرتبطاً بصفحة فيسبوك، حاول الاسترداد عبر فيسبوك أيضاً.",
+      "تأكد من أن المعلومات التي تقدمها (الاسم، البريد) تطابق بيانات الحساب الأصلية.",
+      "لا تستخدم VPN أثناء عملية الاسترداد لأنه قد يثير الشكوك.",
+      "احتفظ برقم مرجعي لكل طلب استرداد ترسله.",
+      "يمكن تقديم أكثر من طلب استرداد إن لم تتلقَ رداً خلال أسبوعين."
+    ],
+    "en": [
+      "Use the email address registered with your account when applying for recovery.",
+      "Provide a clear photo ID if requested by the support team.",
+      "Write a detailed message explaining why your account was disabled and that you didn't violate terms.",
+      "Be patient — Instagram's response time can range from 3 days to 30 days.",
+      "Avoid creating multiple new accounts as this may reduce your chances of recovery.",
+      "If your account is linked to a Facebook page, try recovering through Facebook as well.",
+      "Ensure the information you provide (name, email) matches the original account data.",
+      "Avoid using a VPN during the recovery process as it may raise suspicion.",
+      "Keep a reference number for every recovery request you submit.",
+      "You can submit more than one recovery request if you don't receive a response within two weeks."
+    ]
+  },
+  "verification_tips": {
+    "ar": [
+      "يجب أن يكون حسابك نشطاً وعاماً (غير خاص) عند تقديم طلب التوثيق.",
+      "وجود تغطيات إعلامية في مواقع إخبارية موثوقة يزيد فرص الحصول على التوثيق.",
+      "لا تدفع لأحد مقابل التوثيق، فهذا مخالف لسياسة إنستغرام.",
+      "أكمل ملف تعريفك الشخصي بالكامل: صورة، سيرة ذاتية، روابط.",
+      "كلما زاد عدد متابعيك الحقيقيين، زادت فرص قبول طلبك.",
+      "ربط حسابك بحسابات موثقة على منصات أخرى يقوي طلبك.",
+      "نشر محتوى أصلي ومنتظم يدل على نشاطك الحقيقي.",
+      "التحقق من هوية مشهور أو علامة تجارية معروفة يزيد من فرص القبول.",
+      "يمكن إعادة تقديم الطلب بعد 30 يوماً من الرفض.",
+      "وجود صفحة ويكيبيديا باسمك أو علامتك يُعزز طلب التوثيق بشكل كبير."
+    ],
+    "en": [
+      "Your account must be active and public (not private) when applying for verification.",
+      "Having media coverage on reputable news sites increases your chances of getting verified.",
+      "Never pay anyone for verification — it violates Instagram's policies.",
+      "Complete your profile fully: photo, bio, and links.",
+      "The more real followers you have, the better your chances of approval.",
+      "Linking your account to verified accounts on other platforms strengthens your request.",
+      "Posting original and consistent content proves your authentic presence.",
+      "Being a public figure or well-known brand increases your chances of approval.",
+      "You can reapply 30 days after a rejection.",
+      "Having a Wikipedia page in your name or brand greatly boosts your verification request."
+    ]
+  },
+  "shadowban_tips": {
+    "ar": [
+      "توقف عن استخدام الهاشتاقات المحظورة أو المبلغ عنها.",
+      "لا تتفاعل بشكل مكثف (لايكات / تعليقات / متابعات) في فترة قصيرة.",
+      "تجنب استخدام تطبيقات الطرف الثالث للتفاعل التلقائي.",
+      "أعد تسجيل الدخول وانتظر 48-72 ساعة قبل النشر مجدداً.",
+      "قم بمسح ذاكرة التخزين المؤقت للتطبيق.",
+      "استخدم هاشتاقات أقل في كل منشور (5-10 بدلاً من 30).",
+      "ابتعد عن الهاشتاقات العامة جداً (مثل #love).",
+      "تواصل مع دعم إنستغرام وأبلغهم بالمشكلة.",
+      "انتظر من 14 إلى 30 يوماً وتجنب أي نشاط مشبوه.",
+      "نشر محتوى عالي الجودة يزيد من تفاعل الجمهور الحقيقي."
+    ],
+    "en": [
+      "Stop using banned or reported hashtags immediately.",
+      "Avoid excessive interactions (likes/comments/follows) in a short period.",
+      "Do not use third-party apps for automated interactions.",
+      "Log out and wait 48-72 hours before posting again.",
+      "Clear the app cache on your device.",
+      "Use fewer hashtags per post (5-10 instead of 30).",
+      "Avoid overly generic hashtags like #love.",
+      "Contact Instagram support and report the issue.",
+      "Wait 14 to 30 days and avoid any suspicious activity.",
+      "Posting high-quality content increases genuine audience engagement."
+    ]
+  },
+  "security_tips": {
+    "ar": [
+      "فعّل المصادقة الثنائية (2FA) على حسابك فوراً.",
+      "استخدم كلمة مرور قوية تحتوي على أحرف وأرقام ورموز.",
+      "لا تشارك بيانات تسجيل دخولك مع أي شخص أو تطبيق.",
+      "راجع الأجهزة المتصلة بحسابك بانتظام من الإعدادات.",
+      "لا تضغط على روابط مشبوهة تصلك عبر الرسائل المباشرة.",
+      "تأكد من أن بريدك الإلكتروني المرتبط بالحساب آمن.",
+      "غيّر كلمة مرورك كل 3 أشهر على الأقل.",
+      "لا تستخدم شبكات WiFi العامة عند الدخول لحسابك.",
+      "فعّل تنبيهات تسجيل الدخول من الأجهزة غير المعروفة.",
+      "تجنب تطبيقات زيادة المتابعين، فهي تعرض حسابك للخطر."
+    ],
+    "en": [
+      "Enable two-factor authentication (2FA) on your account immediately.",
+      "Use a strong password containing letters, numbers, and symbols.",
+      "Never share your login credentials with anyone or any app.",
+      "Regularly review connected devices from settings.",
+      "Don't click suspicious links sent via direct messages.",
+      "Make sure the email linked to your account is secure.",
+      "Change your password at least every 3 months.",
+      "Avoid using public WiFi when accessing your account.",
+      "Enable login alerts for unknown devices.",
+      "Avoid follower-boosting apps — they put your account at risk."
+    ]
+  }
+}
