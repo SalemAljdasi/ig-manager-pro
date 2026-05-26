@@ -1,330 +1,252 @@
-"""
-IG Manager Pro - Dashboard Screen
-"""
-
-from kivy.lang import Builder
-from kivymd.uix.screen import MDScreen
-from kivymd.uix.boxlayout import MDBoxLayout
-from kivymd.uix.card import MDCard
-from kivymd.uix.label import MDLabel
-from kivymd.uix.button import MDRaisedButton, MDIconButton
-from kivymd.uix.scrollview import MDScrollView
+from kivy.uix.scrollview import ScrollView
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.gridlayout import GridLayout
+from kivy.graphics import Color, RoundedRectangle
 from kivy.metrics import dp
 from kivy.clock import Clock
-from kivy.graphics import Color, RoundedRectangle
-from models.database import Database
-from assets.theme import *
-
-Builder.load_string("""
-<StatCard>:
-    orientation: "vertical"
-    padding: "16dp"
-    spacing: "8dp"
-    radius: [16,]
-    md_bg_color: app.hex_to_rgba("#12121a")
-    size_hint_y: None
-    height: "110dp"
-    elevation: 4
-
-<DashboardScreen>:
-    name: "dashboard"
-    MDBoxLayout:
-        orientation: "vertical"
-        md_bg_color: app.hex_to_rgba("#0a0a0f")
-
-        # ── Header ──────────────────────────────────────────────────────
-        MDBoxLayout:
-            orientation: "horizontal"
-            size_hint_y: None
-            height: "64dp"
-            padding: ["20dp", "8dp"]
-            spacing: "12dp"
-            md_bg_color: app.hex_to_rgba("#12121a")
-
-            MDLabel:
-                text: "IG Manager Pro"
-                font_style: "H6"
-                theme_text_color: "Custom"
-                text_color: app.hex_to_rgba("#a855f7")
-                bold: True
-                size_hint_x: 1
-
-            MDIconButton:
-                icon: "refresh"
-                theme_icon_color: "Custom"
-                icon_color: app.hex_to_rgba("#06b6d4")
-                on_release: root.refresh()
-
-        # ── Scrollable body ─────────────────────────────────────────────
-        ScrollView:
-            do_scroll_x: False
-
-            MDBoxLayout:
-                id: body
-                orientation: "vertical"
-                padding: "16dp"
-                spacing: "16dp"
-                size_hint_y: None
-                height: self.minimum_height
-
-                # Stat cards row
-                MDGridLayout:
-                    id: stats_grid
-                    cols: 2
-                    spacing: "12dp"
-                    size_hint_y: None
-                    height: self.minimum_height
-
-                # Charts placeholder
-                MDCard:
-                    id: chart_card
-                    orientation: "vertical"
-                    padding: "16dp"
-                    spacing: "12dp"
-                    radius: [16,]
-                    md_bg_color: app.hex_to_rgba("#12121a")
-                    size_hint_y: None
-                    height: "240dp"
-                    elevation: 4
-
-                    MDLabel:
-                        text: "Account Status Distribution"
-                        font_style: "Subtitle1"
-                        theme_text_color: "Custom"
-                        text_color: app.hex_to_rgba("#94a3b8")
-                        bold: True
-                        size_hint_y: None
-                        height: self.texture_size[1]
-
-                    MDBoxLayout:
-                        id: chart_box
-                        size_hint_y: 1
-
-                # Recent scans
-                MDCard:
-                    id: recent_card
-                    orientation: "vertical"
-                    padding: "16dp"
-                    spacing: "10dp"
-                    radius: [16,]
-                    md_bg_color: app.hex_to_rgba("#12121a")
-                    size_hint_y: None
-                    height: self.minimum_height
-                    elevation: 4
-
-                    MDLabel:
-                        text: "Recent Scans"
-                        font_style: "Subtitle1"
-                        theme_text_color: "Custom"
-                        text_color: app.hex_to_rgba("#94a3b8")
-                        bold: True
-                        size_hint_y: None
-                        height: self.texture_size[1]
-
-                    MDBoxLayout:
-                        id: recent_box
-                        orientation: "vertical"
-                        spacing: "8dp"
-                        size_hint_y: None
-                        height: self.minimum_height
-""")
+from kivymd.uix.screen import MDScreen
+from kivymd.uix.label import MDLabel
+from kivymd.uix.card import MDCard
+from kivymd.uix.button import MDRaisedButton, MDIconButton
+from kivymd.uix.boxlayout import MDBoxLayout
+from kivymd.uix.spinner import MDSpinner
+from models.database import get_stats, get_recent_scans, init_db
+from assets.theme import STATUS_LABELS_AR, STATUS_COLORS, COLORS
 
 
 class StatCard(MDCard):
-    def __init__(self, label, value, color, icon, **kwargs):
+    def __init__(self, title, value, color, icon="", **kwargs):
         super().__init__(**kwargs)
-        from kivymd.uix.label import MDLabel
-        from kivymd.uix.boxlayout import MDBoxLayout
-
-        top_row = MDBoxLayout(
-            orientation="horizontal",
-            size_hint_y=None,
-            height=dp(28),
-        )
-        ico = MDLabel(
-            text=icon,
+        self.md_bg_color = (0.07, 0.07, 0.16, 1)
+        self.radius = [dp(16)]
+        self.padding = dp(16)
+        self.size_hint_y = None
+        self.height = dp(100)
+        self.elevation = 4
+        layout = MDBoxLayout(orientation="vertical", spacing=dp(4))
+        icon_label = MDLabel(
+            text=f"{icon}",
             font_style="H5",
-            theme_text_color="Custom",
-            text_color=self._hex(color),
-            size_hint_x=None,
-            width=dp(32),
+            halign="center",
+            size_hint_y=None,
+            height=dp(36),
         )
-        lbl = MDLabel(
-            text=label,
-            font_style="Caption",
-            theme_text_color="Custom",
-            text_color=self._hex("#94a3b8"),
-        )
-        top_row.add_widget(ico)
-        top_row.add_widget(lbl)
-
-        val_lbl = MDLabel(
+        val_label = MDLabel(
             text=str(value),
             font_style="H4",
+            halign="center",
             theme_text_color="Custom",
-            text_color=self._hex(color),
+            text_color=self._hex_to_rgb(color),
             bold=True,
-        )
-        self.add_widget(top_row)
-        self.add_widget(val_lbl)
-
-    @staticmethod
-    def _hex(hex_color):
-        from kivy.utils import get_color_from_hex
-        return get_color_from_hex(hex_color)
-
-
-class RecentScanRow(MDBoxLayout):
-    STATUS_ICONS = {
-        "active":    "✅",
-        "disabled":  "🚫",
-        "shadowban": "⚠️",
-        "private":   "🔒",
-        "unknown":   "❓",
-    }
-    STATUS_COLORS = {
-        "active":    "#22c55e",
-        "disabled":  "#ef4444",
-        "shadowban": "#f97316",
-        "private":   "#a855f7",
-        "unknown":   "#94a3b8",
-    }
-
-    def __init__(self, scan: dict, **kwargs):
-        super().__init__(
-            orientation="horizontal",
             size_hint_y=None,
-            height=dp(40),
-            spacing=dp(8),
-            **kwargs,
+            height=dp(36),
         )
-        from kivy.utils import get_color_from_hex
-        status = scan.get("status", "unknown")
-        color  = get_color_from_hex(self.STATUS_COLORS.get(status, "#94a3b8"))
-
-        icon = MDLabel(
-            text=self.STATUS_ICONS.get(status, "❓"),
-            size_hint_x=None,
-            width=dp(28),
-            font_style="Body1",
-        )
-        name = MDLabel(
-            text=f"@{scan.get('username', '')}",
-            theme_text_color="Custom",
-            text_color=color,
-            font_style="Body1",
-            bold=True,
-        )
-        meta = MDLabel(
-            text=f"{scan.get('followers', 0):,} followers",
-            theme_text_color="Custom",
-            text_color=get_color_from_hex("#475569"),
+        title_label = MDLabel(
+            text=title,
             font_style="Caption",
-            halign="right",
+            halign="center",
+            theme_text_color="Secondary",
         )
-        self.add_widget(icon)
-        self.add_widget(name)
-        self.add_widget(meta)
+        layout.add_widget(icon_label)
+        layout.add_widget(val_label)
+        layout.add_widget(title_label)
+        self.add_widget(layout)
+
+    def _hex_to_rgb(self, hex_color):
+        hex_color = hex_color.lstrip("#")
+        r, g, b = tuple(int(hex_color[i:i+2], 16) / 255 for i in (0, 2, 4))
+        return r, g, b, 1
+
+
+class ScanRowItem(MDBoxLayout):
+    def __init__(self, scan_data, **kwargs):
+        super().__init__(**kwargs)
+        self.orientation = "horizontal"
+        self.size_hint_y = None
+        self.height = dp(48)
+        self.padding = [dp(12), dp(4)]
+        self.spacing = dp(8)
+        with self.canvas.before:
+            Color(0.07, 0.07, 0.16, 1)
+            self.rect = RoundedRectangle(pos=self.pos, size=self.size, radius=[dp(8)])
+        self.bind(pos=self._update_rect, size=self._update_rect)
+
+        username = scan_data.get("username", "")
+        status = scan_data.get("status", "unknown")
+        status_label = STATUS_LABELS_AR.get(status, "غير معروف")
+        status_color = STATUS_COLORS.get(status, "#475569")
+        r, g, b = [int(status_color.lstrip("#")[i:i+2], 16) / 255 for i in (0, 2, 4)]
+
+        self.add_widget(MDLabel(
+            text=f"@{username}",
+            font_style="Body2",
+            theme_text_color="Primary",
+            size_hint_x=0.5,
+        ))
+        self.add_widget(MDLabel(
+            text=status_label,
+            font_style="Caption",
+            theme_text_color="Custom",
+            text_color=(r, g, b, 1),
+            size_hint_x=0.3,
+            halign="center",
+        ))
+        followers = scan_data.get("followers", 0)
+        self.add_widget(MDLabel(
+            text=f"{followers:,}",
+            font_style="Caption",
+            theme_text_color="Secondary",
+            size_hint_x=0.2,
+            halign="center",
+        ))
+
+    def _update_rect(self, *args):
+        self.rect.pos = self.pos
+        self.rect.size = self.size
 
 
 class DashboardScreen(MDScreen):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.name = "dashboard"
+        self._build()
+
+    def _build(self):
+        root = MDBoxLayout(orientation="vertical", spacing=0)
+
+        # Header
+        header = MDBoxLayout(
+            orientation="horizontal",
+            size_hint_y=None,
+            height=dp(60),
+            padding=[dp(16), dp(8)],
+            md_bg_color=(0.07, 0.07, 0.18, 1),
+        )
+        header.add_widget(MDLabel(
+            text="🌟 لوحة التحكم",
+            font_style="H6",
+            theme_text_color="Custom",
+            text_color=(0.655, 0.231, 0.929, 1),
+            bold=True,
+        ))
+        refresh_btn = MDIconButton(icon="refresh", on_release=lambda x: self.refresh())
+        header.add_widget(refresh_btn)
+        root.add_widget(header)
+
+        scroll = ScrollView()
+        self.content = MDBoxLayout(
+            orientation="vertical",
+            spacing=dp(12),
+            padding=dp(12),
+            size_hint_y=None,
+        )
+        self.content.bind(minimum_height=self.content.setter("height"))
+        scroll.add_widget(self.content)
+        root.add_widget(scroll)
+        self.add_widget(root)
+
     def on_enter(self):
         self.refresh()
 
     def refresh(self):
-        db    = Database()
-        stats = db.get_stats()
-        recents = db.get_recent_scans(10)
-        self._update_stats(stats)
-        self._update_chart(stats)
-        self._update_recent(recents)
+        self.content.clear_widgets()
+        init_db()
+        stats = get_stats()
+        recent = get_recent_scans(15)
 
-    def _update_stats(self, stats):
-        grid = self.ids.stats_grid
-        grid.clear_widgets()
-        cards = [
-            ("Active",    stats["active"],    "#22c55e", "✅"),
-            ("Disabled",  stats["disabled"],  "#ef4444", "🚫"),
-            ("Shadowban", stats["shadowban"], "#f97316", "⚠️"),
-            ("Private",   stats["private"],   "#a855f7", "🔒"),
-        ]
-        for label, value, color, icon in cards:
-            grid.add_widget(StatCard(label, value, color, icon))
+        # Stats title
+        self.content.add_widget(MDLabel(
+            text="📊 إحصائيات الحسابات",
+            font_style="Subtitle1",
+            bold=True,
+            theme_text_color="Custom",
+            text_color=(0.655, 0.231, 0.929, 1),
+            size_hint_y=None,
+            height=dp(36),
+        ))
 
-    def _update_chart(self, stats):
-        from kivy.graphics import Color, RoundedRectangle
-        from kivy.utils import get_color_from_hex
-        box = self.ids.chart_box
-        box.clear_widgets()
-
-        total = max(stats["total"], 1)
-        bars = [
-            ("Active",    stats["active"],    "#22c55e"),
-            ("Disabled",  stats["disabled"],  "#ef4444"),
-            ("Shadowban", stats["shadowban"], "#f97316"),
-            ("Private",   stats["private"],   "#a855f7"),
-        ]
-
-        bar_box = MDBoxLayout(
-            orientation="horizontal",
-            spacing=dp(12),
-            padding=[dp(8), 0],
+        # Stats grid
+        grid = GridLayout(
+            cols=2,
+            spacing=dp(10),
+            size_hint_y=None,
+            height=dp(340),
         )
-        for label, count, color in bars:
-            col = MDBoxLayout(orientation="vertical", spacing=dp(4))
-            pct = count / total
+        stat_items = [
+            ("حسابات نشطة", stats.get("active", 0), "#10B981", "✅"),
+            ("معطلة", stats.get("disabled", 0), "#EF4444", "🔴"),
+            ("شادوبان", stats.get("shadowban", 0), "#F59E0B", "⚠️"),
+            ("خاصة", stats.get("private", 0), "#06B6D4", "🔒"),
+            ("مخترقة", stats.get("hacked", 0), "#EC4899", "🚨"),
+            ("موثقة", stats.get("verified", 0), "#7C3AED", "✔️"),
+        ]
+        for title, value, color, icon in stat_items:
+            grid.add_widget(StatCard(title, value, color, icon))
+        self.content.add_widget(grid)
 
-            bar_outer = MDBoxLayout(
-                size_hint_y=1,
-                size_hint_x=None,
-                width=dp(36),
-            )
-            bar_inner = MDCard(
-                size_hint_x=1,
-                size_hint_y=pct if pct > 0 else 0.02,
-                md_bg_color=get_color_from_hex(color),
-                radius=[8, 8, 0, 0],
-            )
-            bar_outer.add_widget(bar_inner)
+        # Total
+        total_card = MDCard(
+            md_bg_color=(0.1, 0.07, 0.2, 1),
+            radius=[dp(14)],
+            padding=dp(12),
+            size_hint_y=None,
+            height=dp(60),
+            elevation=3,
+        )
+        total_box = MDBoxLayout(orientation="horizontal")
+        total_box.add_widget(MDLabel(
+            text="إجمالي الفحوصات",
+            font_style="Subtitle1",
+            bold=True,
+        ))
+        total_box.add_widget(MDLabel(
+            text=str(stats.get("total", 0)),
+            font_style="H5",
+            halign="right",
+            theme_text_color="Custom",
+            text_color=(0.655, 0.231, 0.929, 1),
+            bold=True,
+        ))
+        total_card.add_widget(total_box)
+        self.content.add_widget(total_card)
 
-            lbl_count = MDLabel(
-                text=str(count),
-                theme_text_color="Custom",
-                text_color=get_color_from_hex(color),
-                halign="center",
+        # Recent scans title
+        self.content.add_widget(MDLabel(
+            text="🕐 آخر 15 عملية فحص",
+            font_style="Subtitle1",
+            bold=True,
+            theme_text_color="Custom",
+            text_color=(0.655, 0.231, 0.929, 1),
+            size_hint_y=None,
+            height=dp(36),
+        ))
+
+        # Column headers
+        header_row = MDBoxLayout(
+            orientation="horizontal",
+            size_hint_y=None,
+            height=dp(32),
+            padding=[dp(12), 0],
+        )
+        for text, hint in [("المستخدم", 0.5), ("الحالة", 0.3), ("متابعون", 0.2)]:
+            header_row.add_widget(MDLabel(
+                text=text,
                 font_style="Caption",
-                bold=True,
-                size_hint_y=None,
-                height=dp(18),
-            )
-            lbl_name = MDLabel(
-                text=label,
-                theme_text_color="Custom",
-                text_color=get_color_from_hex("#475569"),
+                theme_text_color="Secondary",
+                size_hint_x=hint,
                 halign="center",
-                font_style="Caption",
-                size_hint_y=None,
-                height=dp(16),
-            )
-            col.add_widget(bar_outer)
-            col.add_widget(lbl_count)
-            col.add_widget(lbl_name)
-            bar_box.add_widget(col)
-
-        box.add_widget(bar_box)
-
-    def _update_recent(self, scans):
-        box = self.ids.recent_box
-        box.clear_widgets()
-        if not scans:
-            box.add_widget(MDLabel(
-                text="No scans yet. Go to Scanner to start.",
-                theme_text_color="Custom",
-                text_color=[0.4, 0.4, 0.5, 1],
-                font_style="Body2",
-                size_hint_y=None,
-                height=dp(40),
             ))
-            return
-        for scan in scans:
-            box.add_widget(RecentScanRow(scan))
+        self.content.add_widget(header_row)
+
+        if recent:
+            for scan in recent:
+                self.content.add_widget(ScanRowItem(scan))
+        else:
+            self.content.add_widget(MDLabel(
+                text="لا توجد فحوصات بعد. ابدأ بفحص حسابات من شاشة الفاحص.",
+                font_style="Body2",
+                theme_text_color="Secondary",
+                halign="center",
+                size_hint_y=None,
+                height=dp(80),
+            ))
