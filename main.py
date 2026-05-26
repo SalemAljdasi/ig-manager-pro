@@ -1,115 +1,90 @@
-"""
-IG Manager Pro - Main Application Entry Point
-Dark-themed Instagram account management tool for Android
-"""
-
 import os
-os.environ.setdefault("KIVY_NO_CONSOLELOG", "1")
+import sys
 
-from kivy.config import Config
-Config.set("graphics", "width",  "412")
-Config.set("graphics", "height", "892")
-Config.set("graphics", "resizable", "1")
-Config.set("kivy",     "window_icon", "")
+# Add project root to path
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from kivy.lang import Builder
-from kivy.utils import get_color_from_hex
+from kivy.metrics import dp
+from kivy.core.window import Window
+from kivy.uix.screenmanager import ScreenManager, SlideTransition
 from kivymd.app import MDApp
-from kivymd.uix.navigationbar import MDNavigationBar, MDNavigationItem
-from kivymd.uix.screenmanager import MDScreenManager
-from kivymd.uix.screen import MDScreen
+from kivymd.uix.bottomnavigation import MDBottomNavigation, MDBottomNavigationItem
+from kivymd.uix.boxlayout import MDBoxLayout
 
+from models.database import init_db
 from screens.dashboard import DashboardScreen
-from screens.scanner   import ScannerScreen
-from screens.reports   import ReportsScreen
-from screens.appeals   import AppealsScreen
+from screens.scanner import ScannerScreen
+from screens.reports import ReportsScreen
+from screens.appeals import AppealsScreen
+from screens.recovery import RecoveryScreen
+from screens.verification import VerificationScreen
+from screens.settings import SettingsScreen
+from screens.ai_chat import AIChatScreen
 
 KV = """
 <RootLayout>:
     orientation: "vertical"
 
-    MDScreenManager:
-        id: screen_manager
+MDBottomNavigationItem:
+    name: "dashboard"
+    text: "لوحة التحكم"
+    icon: "view-dashboard"
 
-    MDNavigationBar:
-        id: nav_bar
-        on_switch_tabs: root.switch_tab(*args)
-
-        MDNavigationItem:
-            icon: "view-dashboard"
-            text: "Dashboard"
-            badge_icon: ""
-
-        MDNavigationItem:
-            icon: "magnify"
-            text: "Scanner"
-
-        MDNavigationItem:
-            icon: "chart-bar"
-            text: "Reports"
-
-        MDNavigationItem:
-            icon: "shield-account"
-            text: "Appeals"
+MDBottomNavigationItem:
+    name: "scanner"
+    text: "الفاحص"
+    icon: "magnify"
 """
-
-Builder.load_string(KV)
-
-TAB_NAMES = ["dashboard", "scanner", "reports", "appeals"]
-
-
-class RootLayout(MDScreen):
-    def switch_tab(self, bar, item, item_icon, item_text):
-        name = item_text.lower()
-        if name in TAB_NAMES:
-            self.ids.screen_manager.current = name
 
 
 class IGManagerApp(MDApp):
     def build(self):
-        self.theme_cls.primary_palette  = "DeepPurple"
-        self.theme_cls.accent_palette   = "Cyan"
-        self.theme_cls.theme_style      = "Dark"
-        self.theme_cls.primary_hue      = "A200"
+        # Initialize DB
+        init_db()
 
-        root = RootLayout()
+        # Theme setup
+        self.theme_cls.primary_palette = "DeepPurple"
+        self.theme_cls.accent_palette = "Cyan"
+        self.theme_cls.theme_style = "Dark"
+        self.theme_cls.primary_hue = "500"
 
-        sm = root.ids.screen_manager
-        sm.add_widget(DashboardScreen(name="dashboard"))
-        sm.add_widget(ScannerScreen(name="scanner"))
-        sm.add_widget(ReportsScreen(name="reports"))
-        sm.add_widget(AppealsScreen(name="appeals"))
-        sm.current = "dashboard"
+        # Window settings
+        Window.softinput_mode = "below_target"
 
-        return root
+        # Build navigation
+        nav = MDBottomNavigation(
+            panel_color=(0.07, 0.07, 0.18, 1),
+            text_color_normal=(0.58, 0.58, 0.70, 1),
+            text_color_active=(0.655, 0.231, 0.929, 1),
+        )
 
-    @staticmethod
-    def hex_to_rgba(hex_color: str, alpha: float = 1.0):
-        """Utility: convert hex to RGBA list usable by Kivy/KivyMD."""
-        c = get_color_from_hex(hex_color)
-        if len(c) == 3:
-            c = (*c, alpha)
-        return list(c)
+        # Screen definitions: (tab_name, icon, arabic_label, ScreenClass)
+        screens_config = [
+            ("dashboard", "view-dashboard", "لوحة التحكم", DashboardScreen),
+            ("scanner", "magnify-scan", "الفاحص", ScannerScreen),
+            ("reports", "file-chart", "التقارير", ReportsScreen),
+            ("appeals", "file-document-edit", "الاستئنافات", AppealsScreen),
+            ("recovery", "lock-reset", "الاسترداد", RecoveryScreen),
+            ("verification", "check-decagram", "التوثيق", VerificationScreen),
+            ("settings", "cog", "الإعدادات", SettingsScreen),
+            ("ai_chat", "robot", "المساعد", AIChatScreen),
+        ]
+
+        for tab_name, icon, label, ScreenClass in screens_config:
+            item = MDBottomNavigationItem(
+                name=tab_name,
+                text=label,
+                icon=icon,
+            )
+            screen = ScreenClass()
+            item.add_widget(screen)
+            nav.add_widget(item)
+
+        return nav
 
     def on_start(self):
-        """Request Android permissions on startup."""
-        try:
-            from android.permissions import (   # type: ignore
-                request_permissions, Permission
-            )
-            request_permissions([
-                Permission.READ_EXTERNAL_STORAGE,
-                Permission.WRITE_EXTERNAL_STORAGE,
-                Permission.INTERNET,
-            ])
-        except ImportError:
-            pass
-
-    def on_pause(self):
-        return True
-
-    def on_resume(self):
-        pass
+        Window.clearcolor = (0.04, 0.04, 0.10, 1)
 
 
 if __name__ == "__main__":
